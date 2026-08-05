@@ -51,7 +51,7 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 今回のようにヒアルロン酸溶解、スタッフ指定なしまで進む場合:
 
 ```text
-ヒアルロン酸|ヒアルロン酸溶解|メニューを確定する|指定なし|スタッフを確定する
+ヒアルロン酸|ヒアルロン酸溶解|メニューを確定する|スタッフを確定する
 ```
 
 この設定を使う場合、GitHub Secretsの `MENU_TEXTS` は不要です。古い `MENU_TEXTS` が残っていても、Actionsでは `CLICK_TEXTS` が入るまで実行しません。
@@ -61,6 +61,8 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 Discord通知の疎通確認をしたい場合は、Actionsの手動実行で `force_notify` を `true` にします。この場合、空きがなくてもテスト通知を1回送ります。
 
 スマホPushが来ない場合は、GitHub Secretに `DISCORD_MENTION` を追加します。Discordの開発者モードで自分のユーザーIDをコピーして入れるのが確実です。自分専用サーバーなら `everyone` でも動きます。
+
+Discordチャンネルにも出ない場合は、Actionsの手動実行で `force_notify=true` と `discord_debug=true` にします。Actionsログに `channel_id` が出るので、Discordの開発者モードで通知先チャンネルのIDをコピーして一致するか確認します。一致しない場合は、Webhookを作ったチャンネルが違います。
 
 注意:
 
@@ -91,6 +93,7 @@ bin/create-public-snapshot.sh
 | `SCAN_NEXT_COUNT` | 予約表表示後に翌週へ進む回数。デフォルトは `1` |
 | `NEXT_WEEK_TEXTS` | 翌週ボタン候補。デフォルトは `翌週|次週|次へ` |
 | `FORCE_NOTIFY` | `true` の時、空きなしでもテスト通知する |
+| `DISCORD_DEBUG` | `true` の時、Discordが受け付けたメッセージIDとチャンネルIDだけをログに出す |
 | `STATE_FILE` | 通知済み枠の記録ファイル |
 | `CHROME_PATH` | 起動するChromeの実行ファイル |
 | `WRITE_STATUS_STATE` | `false` にすると空きなし/通知済みだけではstateを書き換えない |
