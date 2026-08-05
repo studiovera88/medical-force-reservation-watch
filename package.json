@@ -1,0 +1,17 @@
+{
+  "name": "medical-force-reservation-watch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "watch:once": "node src/check-reservation.mjs",
+    "watch:dry": "node src/check-reservation.mjs --dry-run",
+    "lint": "node --check src/check-reservation.mjs && node --check test/detect-availability.test.mjs",
+    "typecheck": "node --check src/check-reservation.mjs && node --check test/detect-availability.test.mjs",
+    "test": "node --test",
+    "check": "npm run lint && npm run typecheck && npm test"
+  }
+}
