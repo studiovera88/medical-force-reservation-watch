@@ -53,6 +53,8 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 ヒアルロン酸|ヒアルロン酸溶解|メニューを確定する|指定なし|スタッフを確定する
 ```
 
+この設定を使う場合、GitHub Secretsの `MENU_TEXTS` は不要です。古い `MENU_TEXTS` が残っていても、Actionsでは `CLICK_TEXTS` が入るまで実行しません。
+
 注意:
 
 - public repoならGitHub Actionsの分数課金を気にせず使えます。
