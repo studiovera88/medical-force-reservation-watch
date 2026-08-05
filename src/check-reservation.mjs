@@ -469,7 +469,7 @@ async function scrapeRenderedText(url, config) {
 
     return await waitForPageText(client, sessionId, config);
   } catch (error) {
-    const suffix = chromeError ? ` Chrome stderr: ${chromeError}` : "";
+    const suffix = config.debugLogs && chromeError ? ` Chrome stderr: ${chromeError}` : "";
     throw new Error(`${error.message}${suffix}`);
   } finally {
     if (client) {
@@ -533,7 +533,7 @@ async function waitForBodyText(client, sessionId, expectedText, timeoutMs) {
   }
 
   throw new Error(
-    `Could not find text "${expectedText}" on the page. Last text: ${lastText.slice(0, 500)}`,
+    `Could not find text "${expectedText}" on the page before timeout.`,
   );
 }
 
@@ -720,6 +720,7 @@ async function buildConfig(args) {
     stateFile: path.resolve(ROOT, env.STATE_FILE || "data/notified-slots.json"),
     chromePath: env.CHROME_PATH || "",
     writeStatusState: envFlag(env.WRITE_STATUS_STATE, true),
+    debugLogs: envFlag(env.DEBUG_LOGS, false),
     dryRun: args.dryRun,
     noNotify: args.noNotify,
     printText: args.printText,
