@@ -593,8 +593,20 @@ async function clickByText(client, sessionId, text) {
             rect.width > 0 &&
             rect.height > 0;
         };
+        const findClickable = (element) => {
+          for (let current = element; current && current !== document.body; current = current.parentElement) {
+            const style = window.getComputedStyle(current);
+            if (
+              current.matches("button, [role='button'], a, label, input, summary") ||
+              style.cursor === "pointer"
+            ) {
+              return current;
+            }
+          }
+          return element;
+        };
         const elements = Array.from(document.querySelectorAll(
-          "button, [role='button'], a, label, li, span, div"
+          "button, [role='button'], a, label, input, summary, li, span, p, div"
         ));
         const matches = elements
           .filter((element) => isVisible(element) && normalize(element.innerText).includes(needle))
@@ -603,7 +615,7 @@ async function clickByText(client, sessionId, text) {
         if (!target) {
           return { clicked: false, reason: "not-found" };
         }
-        const clickable = target.closest("button, [role='button'], a, label") || target;
+        const clickable = findClickable(target);
         if (clickable.disabled || clickable.getAttribute("aria-disabled") === "true") {
           return {
             clicked: false,
@@ -612,11 +624,15 @@ async function clickByText(client, sessionId, text) {
           };
         }
         clickable.scrollIntoView({ block: "center", inline: "center" });
-        clickable.click();
+        const rect = clickable.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
         return {
           clicked: true,
           text: normalize(clickable.innerText || target.innerText),
-          tag: clickable.tagName
+          tag: clickable.tagName,
+          x,
+          y
         };
       })()`,
       returnByValue: true,
@@ -629,6 +645,23 @@ async function clickByText(client, sessionId, text) {
   if (!value?.clicked) {
     throw new Error(`Could not click "${text}": ${value?.reason ?? "unknown"}`);
   }
+
+  await client.send(
+    "Input.dispatchMouseEvent",
+    { type: "mouseMoved", x: value.x, y: value.y },
+    sessionId,
+  );
+  await client.send(
+    "Input.dispatchMouseEvent",
+    { type: "mousePressed", x: value.x, y: value.y, button: "left", clickCount: 1 },
+    sessionId,
+  );
+  await client.send(
+    "Input.dispatchMouseEvent",
+    { type: "mouseReleased", x: value.x, y: value.y, button: "left", clickCount: 1 },
+    sessionId,
+  );
+
   return value;
 }
 
