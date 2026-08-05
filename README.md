@@ -57,6 +57,7 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 この設定を使う場合、GitHub Secretsの `MENU_TEXTS` は不要です。古い `MENU_TEXTS` が残っていても、Actionsでは `CLICK_TEXTS` が入るまで実行しません。
 
 日程表は初期表示の1週間に加えて、デフォルトで翌週を1回開いて確認します。もっと先まで見たい場合はVariableに `SCAN_NEXT_COUNT=2` のように入れます。
+Actionsログには `schedule_pages_scanned` と `next_page_clicks` が出ます。`schedule_pages_scanned=2` / `next_page_clicks=1` なら、初週と翌週を読めています。
 
 Discord通知の疎通確認をしたい場合は、Actionsの手動実行で `force_notify` を `true` にします。この場合、空きがなくてもテスト通知を1回送ります。
 
