@@ -753,7 +753,10 @@ async function waitForJson(url, timeoutMs) {
 
 async function sendDiscord(webhookUrl, content, mention = "", debug = false) {
   const payload = buildDiscordPayload(content, mention);
-  const response = await fetch(debug ? withDiscordWait(webhookUrl) : webhookUrl, {
+  const targetUrl = debug
+    ? withDiscordWait(webhookUrl)
+    : normalizeDiscordWebhookUrl(webhookUrl).toString();
+  const response = await fetch(targetUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
@@ -770,9 +773,20 @@ async function sendDiscord(webhookUrl, content, mention = "", debug = false) {
 }
 
 function withDiscordWait(webhookUrl) {
-  const url = new URL(webhookUrl);
+  const url = normalizeDiscordWebhookUrl(webhookUrl);
   url.searchParams.set("wait", "true");
   return url.toString();
+}
+
+function normalizeDiscordWebhookUrl(webhookUrl) {
+  const url = new URL(webhookUrl);
+  const segments = url.pathname.split("/");
+  const endpointVariant = segments.at(-1)?.toLowerCase();
+  if (endpointVariant === "slack" || endpointVariant === "github") {
+    segments.pop();
+    url.pathname = segments.join("/") || "/";
+  }
+  return url;
 }
 
 async function logDiscordDebugResponse(webhookUrl, responseStatus, body) {
@@ -831,7 +845,7 @@ async function fetchDiscordWebhookInfo(webhookUrl) {
 }
 
 function discordWebhookLookupUrl(webhookUrl) {
-  const url = new URL(webhookUrl);
+  const url = normalizeDiscordWebhookUrl(webhookUrl);
   url.search = "";
   return url.toString();
 }
