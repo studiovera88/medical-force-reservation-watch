@@ -485,17 +485,34 @@ async function scrapeRenderedText(url, config) {
     const scheduleTexts = [await waitForPageText(client, sessionId, config)];
     let nextPageClicks = 0;
     for (let index = 0; index < config.scanNextCount; index += 1) {
-      const clicked = await clickFirstByText(client, sessionId, config.nextWeekTexts);
+      const previousText = scheduleTexts.at(-1);
+      const clicked = await clickNextSchedulePage(
+        client,
+        sessionId,
+        config.nextWeekTexts,
+      );
       if (!clicked) {
         break;
       }
-      nextPageClicks += 1;
 
-      await waitForBodyTextChange(client, sessionId, scheduleTexts.at(-1), 8000).catch(
-        () => {},
-      );
+      const changed = await waitForBodyTextChange(
+        client,
+        sessionId,
+        previousText,
+        8000,
+      ).catch(() => null);
+      if (!changed) {
+        break;
+      }
+
       await delay(config.pageSettleMs);
-      scheduleTexts.push(await waitForPageText(client, sessionId, config));
+      const nextText = await waitForPageText(client, sessionId, config);
+      if (!nextText || nextText === previousText) {
+        break;
+      }
+
+      nextPageClicks += 1;
+      scheduleTexts.push(nextText);
     }
 
     console.log(
@@ -601,6 +618,130 @@ async function clickFirstByText(client, sessionId, texts) {
   }
 
   return false;
+}
+
+async function clickNextSchedulePage(client, sessionId, texts) {
+  if (await clickFirstByText(client, sessionId, texts)) {
+    return true;
+  }
+
+  return await clickNextCalendarControl(client, sessionId);
+}
+
+async function clickNextCalendarControl(client, sessionId) {
+  const result = await client.send(
+    "Runtime.evaluate",
+    {
+      expression: `(() => {
+        const normalize = (value) => String(value || "").replace(/\\s+/g, " ").trim();
+        const isVisible = (element) => {
+          const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            rect.width > 0 &&
+            rect.height > 0;
+        };
+        const findClickable = (element) => {
+          for (let current = element; current && current !== document.body; current = current.parentElement) {
+            const style = window.getComputedStyle(current);
+            if (
+              current.matches("button, [role='button'], a, label, input, summary") ||
+              style.cursor === "pointer"
+            ) {
+              return current;
+            }
+          }
+          return null;
+        };
+        const nameFor = (element) => normalize([
+          element.innerText,
+          element.textContent,
+          element.getAttribute("aria-label"),
+          element.getAttribute("title"),
+          element.getAttribute("value"),
+          element.getAttribute("data-testid"),
+          element.className && typeof element.className === "string" ? element.className : "",
+        ].filter(Boolean).join(" "));
+        const hasNextName = (name) =>
+          /(翌週|次週|次へ|次の|next|forward|right|chevron_right|navigate_next|arrow_forward|keyboard_arrow_right|[>›»])/i.test(name) &&
+          !/(前週|前へ|戻|prev|previous|back|left|chevron_left|navigate_before|arrow_back|keyboard_arrow_left)/i.test(name);
+        const candidates = Array.from(document.querySelectorAll(
+          "button, [role='button'], a, label, input, summary, [aria-label], [title], svg, span, div"
+        ))
+          .filter((element) => isVisible(element))
+          .map((element) => {
+            const clickable = findClickable(element);
+            if (!clickable || !isVisible(clickable)) {
+              return null;
+            }
+            const name = normalize([nameFor(element), nameFor(clickable)].join(" "));
+            if (!hasNextName(name)) {
+              return null;
+            }
+            if (clickable.disabled || clickable.getAttribute("aria-disabled") === "true") {
+              return null;
+            }
+            const rect = clickable.getBoundingClientRect();
+            return {
+              element: clickable,
+              name,
+              tag: clickable.tagName,
+              width: rect.width,
+              height: rect.height,
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => {
+            const buttonScore = (value) => value.tag === "BUTTON" ? 0 : 1;
+            const symbolScore = (value) => /^[>›»]$/.test(value.name) ? 0 : 1;
+            return buttonScore(a) - buttonScore(b) ||
+              symbolScore(a) - symbolScore(b) ||
+              a.name.length - b.name.length;
+          });
+        const target = candidates[0];
+        if (!target) {
+          return { clicked: false, reason: "next-control-not-found" };
+        }
+        target.element.scrollIntoView({ block: "center", inline: "center" });
+        return {
+          clicked: true,
+          text: target.name,
+          tag: target.tag,
+          x: target.x,
+          y: target.y,
+        };
+      })()`,
+      returnByValue: true,
+      awaitPromise: true,
+    },
+    sessionId,
+  );
+
+  const value = result.result?.value;
+  if (!value?.clicked) {
+    return false;
+  }
+
+  await client.send(
+    "Input.dispatchMouseEvent",
+    { type: "mouseMoved", x: value.x, y: value.y },
+    sessionId,
+  );
+  await client.send(
+    "Input.dispatchMouseEvent",
+    { type: "mousePressed", x: value.x, y: value.y, button: "left", clickCount: 1 },
+    sessionId,
+  );
+  await client.send(
+    "Input.dispatchMouseEvent",
+    { type: "mouseReleased", x: value.x, y: value.y, button: "left", clickCount: 1 },
+    sessionId,
+  );
+
+  return true;
 }
 
 async function clickByText(client, sessionId, text) {
