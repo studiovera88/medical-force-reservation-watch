@@ -816,9 +816,18 @@ async function logClickableCandidates(client, sessionId) {
             seen.add(key);
             return true;
           })
-          .sort((a, b) => a.y - b.y || a.x - b.x)
+          .sort((a, b) => a.y - b.y || a.x - b.x);
+        const viewportCandidates = candidates
+          .filter((candidate) => candidate.y >= -200 && candidate.y <= window.innerHeight + 200)
           .slice(0, 80);
-        return { clickable_candidates: candidates };
+        return {
+          scroll_y: Math.round(window.scrollY),
+          viewport_height: Math.round(window.innerHeight),
+          document_height: Math.round(document.documentElement.scrollHeight || document.body.scrollHeight || 0),
+          clickable_count: candidates.length,
+          viewport_clickable_candidates: viewportCandidates,
+          tail_clickable_candidates: candidates.slice(-80),
+        };
       })()`,
       returnByValue: true,
       awaitPromise: true,
