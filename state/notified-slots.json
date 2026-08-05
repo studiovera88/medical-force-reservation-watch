@@ -1,7 +1,8 @@
 {
   "notified": {
-    "available-symbol:704b5bac1310ea6a": "2026-08-05T15:19:53.741Z"
+    "available-symbol:704b5bac1310ea6a": "2026-08-05T15:19:53.741Z",
+    "08/14|（金）|12:00|◎": "2026-08-05T18:05:29.476Z"
   },
-  "lastCheckedAt": "2026-08-05T15:19:53.741Z",
-  "lastStatus": "available-symbol"
+  "lastCheckedAt": "2026-08-05T18:05:29.476Z",
+  "lastStatus": "available-slot"
 }
