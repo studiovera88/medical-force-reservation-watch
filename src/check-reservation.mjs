@@ -467,7 +467,21 @@ async function scrapeRenderedText(url, config) {
       }
     }
 
-    return await waitForPageText(client, sessionId, config);
+    const scheduleTexts = [await waitForPageText(client, sessionId, config)];
+    for (let index = 0; index < config.scanNextCount; index += 1) {
+      const clicked = await clickFirstByText(client, sessionId, config.nextWeekTexts);
+      if (!clicked) {
+        break;
+      }
+
+      await waitForBodyTextChange(client, sessionId, scheduleTexts.at(-1), 8000).catch(
+        () => {},
+      );
+      await delay(config.pageSettleMs);
+      scheduleTexts.push(await waitForPageText(client, sessionId, config));
+    }
+
+    return scheduleTexts.join("\n\n--- next schedule page ---\n\n");
   } catch (error) {
     const suffix = config.debugLogs && chromeError ? ` Chrome stderr: ${chromeError}` : "";
     throw new Error(`${error.message}${suffix}`);
@@ -535,6 +549,33 @@ async function waitForBodyText(client, sessionId, expectedText, timeoutMs) {
   throw new Error(
     `Could not find text "${expectedText}" on the page before timeout.`,
   );
+}
+
+async function waitForBodyTextChange(client, sessionId, previousText, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const text = await readBodyText(client, sessionId);
+    if (text && text !== previousText) {
+      return text;
+    }
+    await delay(500);
+  }
+
+  throw new Error("Page text did not change before timeout.");
+}
+
+async function clickFirstByText(client, sessionId, texts) {
+  for (const text of texts) {
+    try {
+      await clickByText(client, sessionId, text);
+      return true;
+    } catch {
+      // Try the next configured label.
+    }
+  }
+
+  return false;
 }
 
 async function clickByText(client, sessionId, text) {
@@ -708,6 +749,9 @@ async function buildConfig(args) {
   const menuTexts = (env.MENU_TEXTS || env.MENU_TEXT || "")
     ? splitConfigList(env.MENU_TEXTS || env.MENU_TEXT || "")
     : [];
+  const nextWeekTexts = splitConfigList(
+    env.NEXT_WEEK_TEXTS || env.NEXT_WEEK_TEXT || "翌週|次週|次へ",
+  );
 
   return {
     url: env.WATCH_URL || "",
@@ -717,6 +761,8 @@ async function buildConfig(args) {
     confirmText: env.CONFIRM_TEXT === undefined ? "メニューを確定する" : env.CONFIRM_TEXT,
     checkTimeoutMs: Number(env.CHECK_TIMEOUT_MS || 45_000),
     pageSettleMs: Number(env.PAGE_SETTLE_MS || 2500),
+    scanNextCount: Number(env.SCAN_NEXT_COUNT || env.NEXT_PAGE_COUNT || 1),
+    nextWeekTexts,
     stateFile: path.resolve(ROOT, env.STATE_FILE || "data/notified-slots.json"),
     chromePath: env.CHROME_PATH || "",
     writeStatusState: envFlag(env.WRITE_STATUS_STATE, true),
