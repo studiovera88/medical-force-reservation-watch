@@ -42,6 +42,7 @@ GitHubリポジトリのSecrets/Variablesに以下を設定します。
 | 種類 | 名前 | 値 |
 | --- | --- | --- |
 | Secret | `DISCORD_WEBHOOK_URL` | Discord Webhook URL |
+| Secret | `DISCORD_MENTION` | スマホPush用メンション。DiscordユーザーID、または自分専用サーバーなら `everyone` |
 | Secret | `CLICK_TEXTS` | 予約表までにクリックする文字を順番に `|` 区切り |
 | Variable または Secret | `WATCH_URL` | 監視する予約ページURL |
 
@@ -58,6 +59,8 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 日程表は初期表示の1週間に加えて、デフォルトで翌週を1回開いて確認します。もっと先まで見たい場合はVariableに `SCAN_NEXT_COUNT=2` のように入れます。
 
 Discord通知の疎通確認をしたい場合は、Actionsの手動実行で `force_notify` を `true` にします。この場合、空きがなくてもテスト通知を1回送ります。
+
+スマホPushが来ない場合は、GitHub Secretに `DISCORD_MENTION` を追加します。Discordの開発者モードで自分のユーザーIDをコピーして入れるのが確実です。自分専用サーバーなら `everyone` でも動きます。
 
 注意:
 
@@ -79,6 +82,7 @@ bin/create-public-snapshot.sh
 | --- | --- |
 | `WATCH_URL` | 監視する予約ページURL |
 | `DISCORD_WEBHOOK_URL` | DiscordのWebhook URL |
+| `DISCORD_MENTION` | 通知の先頭に付けるメンション。ユーザーID、`<@ユーザーID>`、または `everyone` |
 | `CLICK_TEXTS` | 予約表までにクリックする文字を順番に `|` 区切り。設定時は `MENU_TEXTS` / `CONFIRM_TEXT` より優先 |
 | `MENU_TEXTS` | 予約表までにクリックするメニュー名。複数ある場合は `院長指名|山田医師` のように `|` 区切り |
 | `CONFIRM_TEXT` | メニュー選択後に押す確定ボタン。不要なら空文字 |
