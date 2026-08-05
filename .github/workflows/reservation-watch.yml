@@ -33,6 +33,8 @@ jobs:
           CLICK_TEXTS: ${{ secrets.CLICK_TEXTS }}
           MENU_TEXTS: ${{ secrets.MENU_TEXTS }}
           CONFIRM_TEXT: ${{ vars.CONFIRM_TEXT || 'メニューを確定する' }}
+          SCAN_NEXT_COUNT: ${{ vars.SCAN_NEXT_COUNT || '1' }}
+          NEXT_WEEK_TEXTS: ${{ vars.NEXT_WEEK_TEXTS || '翌週|次週|次へ' }}
           STATE_FILE: state/notified-slots.json
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
