@@ -85,6 +85,23 @@ test("detects compact inline rows", () => {
   ]);
 });
 
+test("does not notify on an available symbol outside a parsed slot", () => {
+  const detection = detectAvailability(`
+2026/08/12
+11:00
+12:00
+08/12
+（水）
+×
+×
+ページ内の説明 ◎
+`);
+
+  assert.equal(detection.available, false);
+  assert.equal(detection.reason, "unparsed-available-symbol");
+  assert.deepEqual(detection.slots, []);
+});
+
 test("keeps only lines before the legend", () => {
   const lines = stripLegend(["08/12", "×", "◎", "予約できます", "×", "予約できません"]);
 
