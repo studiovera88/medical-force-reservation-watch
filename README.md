@@ -10,7 +10,7 @@ Medical Forceの予約ページを定期確認し、予約表本体に `◎` が
 2. このプロジェクトで `.env.example` を `.env` にコピーする。
 3. `.env` の `WATCH_URL` に予約ページURLを入れる。
 4. `.env` の `DISCORD_WEBHOOK_URL` にWebhook URLを入れる。
-5. 予約表を出すためにクリックするメニュー名を `MENU_TEXTS` に入れる。
+5. 予約表を出すためにクリックする順番を `CLICK_TEXTS` に入れる。
 6. 1回だけ確認する。
 
 ```sh
@@ -42,11 +42,16 @@ GitHubリポジトリのSecrets/Variablesに以下を設定します。
 | 種類 | 名前 | 値 |
 | --- | --- | --- |
 | Secret | `DISCORD_WEBHOOK_URL` | Discord Webhook URL |
-| Secret | `MENU_TEXTS` | 予約表までにクリックするメニュー名 |
+| Secret | `CLICK_TEXTS` | 予約表までにクリックする文字を順番に `|` 区切り |
 | Variable または Secret | `WATCH_URL` | 監視する予約ページURL |
-| Variable | `CONFIRM_TEXT` | 通常は `メニューを確定する` |
 
 Workflowは `.github/workflows/reservation-watch.yml` です。
+
+今回のようにヒアルロン酸溶解、スタッフ指定なしまで進む場合:
+
+```text
+ヒアルロン酸|ヒアルロン酸溶解|メニューを確定する|指定なし|スタッフを確定する
+```
 
 注意:
 
@@ -68,6 +73,7 @@ bin/create-public-snapshot.sh
 | --- | --- |
 | `WATCH_URL` | 監視する予約ページURL |
 | `DISCORD_WEBHOOK_URL` | DiscordのWebhook URL |
+| `CLICK_TEXTS` | 予約表までにクリックする文字を順番に `|` 区切り。設定時は `MENU_TEXTS` / `CONFIRM_TEXT` より優先 |
 | `MENU_TEXTS` | 予約表までにクリックするメニュー名。複数ある場合は `院長指名|山田医師` のように `|` 区切り |
 | `CONFIRM_TEXT` | メニュー選択後に押す確定ボタン。不要なら空文字 |
 | `CHECK_TIMEOUT_MS` | ページ表示を待つ最大時間 |
