@@ -57,6 +57,8 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 
 日程表は初期表示の1週間に加えて、デフォルトで翌週を1回開いて確認します。もっと先まで見たい場合はVariableに `SCAN_NEXT_COUNT=2` のように入れます。
 
+Discord通知の疎通確認をしたい場合は、Actionsの手動実行で `force_notify` を `true` にします。この場合、空きがなくてもテスト通知を1回送ります。
+
 注意:
 
 - public repoならGitHub Actionsの分数課金を気にせず使えます。
@@ -84,6 +86,7 @@ bin/create-public-snapshot.sh
 | `PAGE_SETTLE_MS` | 予約表らしき文字を検知した後の追加待機 |
 | `SCAN_NEXT_COUNT` | 予約表表示後に翌週へ進む回数。デフォルトは `1` |
 | `NEXT_WEEK_TEXTS` | 翌週ボタン候補。デフォルトは `翌週|次週|次へ` |
+| `FORCE_NOTIFY` | `true` の時、空きなしでもテスト通知する |
 | `STATE_FILE` | 通知済み枠の記録ファイル |
 | `CHROME_PATH` | 起動するChromeの実行ファイル |
 | `WRITE_STATUS_STATE` | `false` にすると空きなし/通知済みだけではstateを書き換えない |
