@@ -492,6 +492,9 @@ async function scrapeRenderedText(url, config) {
         config.nextWeekTexts,
       );
       if (!clicked) {
+        if (config.scanDebug) {
+          await logClickableCandidates(client, sessionId);
+        }
         break;
       }
 
@@ -742,6 +745,88 @@ async function clickNextCalendarControl(client, sessionId) {
   );
 
   return true;
+}
+
+async function logClickableCandidates(client, sessionId) {
+  const result = await client.send(
+    "Runtime.evaluate",
+    {
+      expression: `(() => {
+        const normalize = (value, length = 80) =>
+          String(value || "").replace(/\\s+/g, " ").trim().slice(0, length);
+        const isVisible = (element) => {
+          const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            rect.width > 0 &&
+            rect.height > 0;
+        };
+        const findClickable = (element) => {
+          for (let current = element; current && current !== document.body; current = current.parentElement) {
+            const style = window.getComputedStyle(current);
+            if (
+              current.matches("button, [role='button'], a, label, input, summary") ||
+              style.cursor === "pointer"
+            ) {
+              return current;
+            }
+          }
+          return null;
+        };
+        const describe = (element, source) => {
+          const clickable = findClickable(element);
+          if (!clickable || !isVisible(clickable)) {
+            return null;
+          }
+          const rect = clickable.getBoundingClientRect();
+          return {
+            source,
+            tag: clickable.tagName,
+            role: normalize(clickable.getAttribute("role"), 30),
+            text: normalize(clickable.innerText || clickable.textContent),
+            aria_label: normalize(clickable.getAttribute("aria-label")),
+            title: normalize(clickable.getAttribute("title")),
+            class_name: normalize(clickable.className && typeof clickable.className === "string" ? clickable.className : ""),
+            x: Math.round(rect.left + rect.width / 2),
+            y: Math.round(rect.top + rect.height / 2),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          };
+        };
+        const seen = new Set();
+        const candidates = Array.from(document.querySelectorAll(
+          "button, [role='button'], a, label, input, summary, [aria-label], [title], svg, span, div"
+        ))
+          .filter((element) => isVisible(element))
+          .map((element) => describe(element, element.tagName))
+          .filter(Boolean)
+          .filter((candidate) => {
+            const key = [
+              candidate.tag,
+              candidate.text,
+              candidate.aria_label,
+              candidate.title,
+              candidate.x,
+              candidate.y,
+            ].join("|");
+            if (seen.has(key)) {
+              return false;
+            }
+            seen.add(key);
+            return true;
+          })
+          .sort((a, b) => a.y - b.y || a.x - b.x)
+          .slice(0, 80);
+        return { clickable_candidates: candidates };
+      })()`,
+      returnByValue: true,
+      awaitPromise: true,
+    },
+    sessionId,
+  );
+
+  console.log(JSON.stringify(result.result?.value ?? { clickable_candidates: [] }));
 }
 
 async function clickByText(client, sessionId, text) {
@@ -1113,6 +1198,7 @@ async function buildConfig(args) {
     chromePath: env.CHROME_PATH || "",
     writeStatusState: envFlag(env.WRITE_STATUS_STATE, true),
     debugLogs: envFlag(env.DEBUG_LOGS, false),
+    scanDebug: envFlag(env.SCAN_DEBUG, false),
     discordDebug: envFlag(env.DISCORD_DEBUG, false),
     forceNotify: envFlag(env.FORCE_NOTIFY, false),
     dryRun: args.dryRun,
