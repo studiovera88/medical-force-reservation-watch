@@ -765,7 +765,7 @@ async function sendDiscord(webhookUrl, content, mention = "", debug = false) {
   }
 
   if (debug) {
-    logDiscordDebugResponse(body);
+    await logDiscordDebugResponse(webhookUrl, response.status, body);
   }
 }
 
@@ -775,24 +775,65 @@ function withDiscordWait(webhookUrl) {
   return url.toString();
 }
 
-function logDiscordDebugResponse(body) {
+async function logDiscordDebugResponse(webhookUrl, responseStatus, body) {
+  const messageInfo = parseDiscordDebugBody(body);
+  const webhookInfo = messageInfo.channel_id
+    ? {}
+    : await fetchDiscordWebhookInfo(webhookUrl).catch((error) => ({
+        webhook_lookup_error: error.message,
+      }));
+
+  console.log(
+    JSON.stringify({
+      discordMessageAccepted: true,
+      response_status: responseStatus,
+      id: messageInfo.id ?? null,
+      channel_id: messageInfo.channel_id ?? webhookInfo.channel_id ?? null,
+      webhook_lookup_status: webhookInfo.status ?? null,
+      webhook_lookup_error: webhookInfo.webhook_lookup_error ?? null,
+    }),
+  );
+}
+
+function parseDiscordDebugBody(body) {
   if (!body) {
-    console.log(JSON.stringify({ discordMessageAccepted: true }));
-    return;
+    return {};
   }
 
   try {
     const message = JSON.parse(body);
-    console.log(
-      JSON.stringify({
-        discordMessageAccepted: true,
-        id: message.id ?? null,
-        channel_id: message.channel_id ?? null,
-      }),
-    );
+    return {
+      id: message.id ?? null,
+      channel_id: message.channel_id ?? null,
+    };
   } catch {
-    console.log(JSON.stringify({ discordMessageAccepted: true }));
+    return {};
   }
+}
+
+async function fetchDiscordWebhookInfo(webhookUrl) {
+  const response = await fetch(discordWebhookLookupUrl(webhookUrl));
+  const body = await response.text().catch(() => "");
+
+  if (!response.ok) {
+    return { status: response.status, channel_id: null };
+  }
+
+  try {
+    const webhook = JSON.parse(body);
+    return {
+      status: response.status,
+      channel_id: webhook.channel_id ?? null,
+    };
+  } catch {
+    return { status: response.status, channel_id: null };
+  }
+}
+
+function discordWebhookLookupUrl(webhookUrl) {
+  const url = new URL(webhookUrl);
+  url.search = "";
+  return url.toString();
 }
 
 function buildDiscordPayload(content, mention) {
