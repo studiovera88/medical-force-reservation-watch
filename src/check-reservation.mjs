@@ -751,20 +751,48 @@ async function waitForJson(url, timeoutMs) {
   throw new Error(`Timed out waiting for ${url}: ${lastError?.message ?? "no response"}`);
 }
 
-async function sendDiscord(webhookUrl, content) {
+async function sendDiscord(webhookUrl, content, mention = "") {
+  const payload = buildDiscordPayload(content, mention);
   const response = await fetch(webhookUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      content,
-      allowed_mentions: { parse: [] },
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new Error(`Discord webhook failed: ${response.status} ${body}`);
   }
+}
+
+function buildDiscordPayload(content, mention) {
+  const normalizedMention = String(mention || "").trim();
+  if (!normalizedMention) {
+    return {
+      content,
+      allowed_mentions: { parse: [] },
+    };
+  }
+
+  if (normalizedMention.toLowerCase() === "everyone") {
+    return {
+      content: `@everyone\n${content}`,
+      allowed_mentions: { parse: ["everyone"] },
+    };
+  }
+
+  const userId = normalizedMention.match(/\d{15,25}/)?.[0];
+  if (!userId) {
+    return {
+      content,
+      allowed_mentions: { parse: [] },
+    };
+  }
+
+  return {
+    content: `<@${userId}>\n${content}`,
+    allowed_mentions: { parse: [], users: [userId] },
+  };
 }
 
 async function readState(stateFile) {
@@ -804,6 +832,7 @@ async function buildConfig(args) {
   return {
     url: env.WATCH_URL || "",
     webhookUrl: env.DISCORD_WEBHOOK_URL || "",
+    discordMention: env.DISCORD_MENTION || "",
     clickTexts,
     menuTexts,
     confirmText: env.CONFIRM_TEXT === undefined ? "メニューを確定する" : env.CONFIRM_TEXT,
@@ -872,6 +901,7 @@ async function main() {
       await sendDiscord(
         config.webhookUrl,
         buildTestNotificationMessage({ detection, checkedAt }),
+        config.discordMention,
       );
     }
 
@@ -919,7 +949,7 @@ async function main() {
     if (!config.webhookUrl) {
       throw new Error("DISCORD_WEBHOOK_URL is not set.");
     }
-    await sendDiscord(config.webhookUrl, message);
+    await sendDiscord(config.webhookUrl, message, config.discordMention);
   }
 
   if (!config.dryRun) {
