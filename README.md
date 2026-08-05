@@ -6,7 +6,7 @@ Medical Forceの予約ページを定期確認し、予約表本体に `◎` が
 
 ## 初期設定
 
-1. Discordで通知先チャンネルのWebhook URLを作る。URL末尾に `/slack` や `/github` が付いていない通常のWebhook URLを使う。
+1. Discordで通知先チャンネルのWebhook URLを作る。DiscordのチャンネルURLではなく、`https://discord.com/api/webhooks/...` 形式のURLを使う。
 2. このプロジェクトで `.env.example` を `.env` にコピーする。
 3. `.env` の `WATCH_URL` に予約ページURLを入れる。
 4. `.env` の `DISCORD_WEBHOOK_URL` にWebhook URLを入れる。
