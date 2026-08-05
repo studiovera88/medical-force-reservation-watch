@@ -780,12 +780,38 @@ function withDiscordWait(webhookUrl) {
 
 function normalizeDiscordWebhookUrl(webhookUrl) {
   const url = new URL(webhookUrl);
-  const segments = url.pathname.split("/");
-  const endpointVariant = segments.at(-1)?.toLowerCase();
-  if (endpointVariant === "slack" || endpointVariant === "github") {
-    segments.pop();
-    url.pathname = segments.join("/") || "/";
+  const host = url.hostname.toLowerCase();
+  const isDiscordHost =
+    host === "discord.com" ||
+    host === "discordapp.com" ||
+    host.endsWith(".discord.com") ||
+    host.endsWith(".discordapp.com");
+  if (!isDiscordHost) {
+    throw new Error(
+      "DISCORD_WEBHOOK_URL must be a Discord webhook URL like https://discord.com/api/webhooks/WEBHOOK_ID/TOKEN.",
+    );
   }
+
+  const segments = url.pathname.split("/").filter(Boolean);
+  const webhookIndex = segments.findIndex(
+    (segment) => segment.toLowerCase() === "webhooks",
+  );
+  const webhookId = segments[webhookIndex + 1];
+  const webhookToken = segments[webhookIndex + 2];
+  if (webhookIndex < 0 || !webhookId || !webhookToken) {
+    throw new Error(
+      "DISCORD_WEBHOOK_URL must be the copied Discord Webhook URL. Do not use a Discord channel URL.",
+    );
+  }
+
+  const endpointVariant = segments[webhookIndex + 3]?.toLowerCase();
+  if (endpointVariant && !["slack", "github"].includes(endpointVariant)) {
+    throw new Error(
+      "DISCORD_WEBHOOK_URL must be the base Discord Webhook URL without extra path segments.",
+    );
+  }
+
+  url.pathname = `/${segments.slice(0, webhookIndex + 3).join("/")}`;
   return url;
 }
 
@@ -796,17 +822,24 @@ async function logDiscordDebugResponse(webhookUrl, responseStatus, body) {
     : await fetchDiscordWebhookInfo(webhookUrl).catch((error) => ({
         webhook_lookup_error: error.message,
       }));
+  const channelId = messageInfo.channel_id ?? webhookInfo.channel_id ?? null;
 
   console.log(
     JSON.stringify({
       discordMessageAccepted: true,
       response_status: responseStatus,
       id: messageInfo.id ?? null,
-      channel_id: messageInfo.channel_id ?? webhookInfo.channel_id ?? null,
+      channel_id: channelId,
       webhook_lookup_status: webhookInfo.status ?? null,
       webhook_lookup_error: webhookInfo.webhook_lookup_error ?? null,
     }),
   );
+
+  if (!messageInfo.id && !channelId) {
+    throw new Error(
+      "Discord returned HTTP success, but no Discord message/channel data. Set DISCORD_WEBHOOK_URL to the copied Discord Webhook URL, not a Discord channel URL or compatible endpoint URL.",
+    );
+  }
 }
 
 function parseDiscordDebugBody(body) {
