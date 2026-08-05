@@ -448,7 +448,13 @@ async function scrapeRenderedText(url, config) {
     await client.send("Runtime.enable", {}, sessionId);
     await client.send("Page.navigate", { url }, sessionId);
 
-    if (config.menuTexts.length > 0) {
+    if (config.clickTexts.length > 0) {
+      for (const clickText of config.clickTexts) {
+        await waitForBodyText(client, sessionId, clickText, 20_000);
+        await clickByText(client, sessionId, clickText);
+        await delay(900);
+      }
+    } else if (config.menuTexts.length > 0) {
       for (const menuText of config.menuTexts) {
         await waitForBodyText(client, sessionId, menuText, 20_000);
         await clickByText(client, sessionId, menuText);
@@ -698,14 +704,15 @@ function parseArgs(argv) {
 async function buildConfig(args) {
   const dotEnv = await loadDotEnv();
   const env = { ...dotEnv, ...process.env };
+  const clickTexts = splitConfigList(env.CLICK_TEXTS || env.CLICK_TEXT || "");
   const menuTexts = (env.MENU_TEXTS || env.MENU_TEXT || "")
-    .split("|")
-    .map((text) => text.trim())
-    .filter(Boolean);
+    ? splitConfigList(env.MENU_TEXTS || env.MENU_TEXT || "")
+    : [];
 
   return {
     url: env.WATCH_URL || "",
     webhookUrl: env.DISCORD_WEBHOOK_URL || "",
+    clickTexts,
     menuTexts,
     confirmText: env.CONFIRM_TEXT === undefined ? "メニューを確定する" : env.CONFIRM_TEXT,
     checkTimeoutMs: Number(env.CHECK_TIMEOUT_MS || 45_000),
@@ -717,6 +724,13 @@ async function buildConfig(args) {
     noNotify: args.noNotify,
     printText: args.printText,
   };
+}
+
+function splitConfigList(value) {
+  return String(value)
+    .split("|")
+    .map((text) => text.trim())
+    .filter(Boolean);
 }
 
 function envFlag(value, defaultValue) {
@@ -736,7 +750,11 @@ async function main() {
 
   const checkedAt = new Date();
   const text = await scrapeRenderedText(config.url, config);
-  if (config.menuTexts.length === 0 && looksLikeMenuSelection(text)) {
+  if (
+    config.clickTexts.length === 0 &&
+    config.menuTexts.length === 0 &&
+    looksLikeMenuSelection(text)
+  ) {
     throw new Error(
       "The page is still on menu selection. Set MENU_TEXTS in .env to the menu label(s) that open the reservation table.",
     );
