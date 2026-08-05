@@ -751,17 +751,47 @@ async function waitForJson(url, timeoutMs) {
   throw new Error(`Timed out waiting for ${url}: ${lastError?.message ?? "no response"}`);
 }
 
-async function sendDiscord(webhookUrl, content, mention = "") {
+async function sendDiscord(webhookUrl, content, mention = "", debug = false) {
   const payload = buildDiscordPayload(content, mention);
-  const response = await fetch(webhookUrl, {
+  const response = await fetch(debug ? withDiscordWait(webhookUrl) : webhookUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
   });
+  const body = await response.text().catch(() => "");
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
     throw new Error(`Discord webhook failed: ${response.status} ${body}`);
+  }
+
+  if (debug) {
+    logDiscordDebugResponse(body);
+  }
+}
+
+function withDiscordWait(webhookUrl) {
+  const url = new URL(webhookUrl);
+  url.searchParams.set("wait", "true");
+  return url.toString();
+}
+
+function logDiscordDebugResponse(body) {
+  if (!body) {
+    console.log(JSON.stringify({ discordMessageAccepted: true }));
+    return;
+  }
+
+  try {
+    const message = JSON.parse(body);
+    console.log(
+      JSON.stringify({
+        discordMessageAccepted: true,
+        id: message.id ?? null,
+        channel_id: message.channel_id ?? null,
+      }),
+    );
+  } catch {
+    console.log(JSON.stringify({ discordMessageAccepted: true }));
   }
 }
 
@@ -844,6 +874,7 @@ async function buildConfig(args) {
     chromePath: env.CHROME_PATH || "",
     writeStatusState: envFlag(env.WRITE_STATUS_STATE, true),
     debugLogs: envFlag(env.DEBUG_LOGS, false),
+    discordDebug: envFlag(env.DISCORD_DEBUG, false),
     forceNotify: envFlag(env.FORCE_NOTIFY, false),
     dryRun: args.dryRun,
     noNotify: args.noNotify,
@@ -902,6 +933,7 @@ async function main() {
         config.webhookUrl,
         buildTestNotificationMessage({ detection, checkedAt }),
         config.discordMention,
+        config.discordDebug,
       );
     }
 
@@ -949,7 +981,12 @@ async function main() {
     if (!config.webhookUrl) {
       throw new Error("DISCORD_WEBHOOK_URL is not set.");
     }
-    await sendDiscord(config.webhookUrl, message, config.discordMention);
+    await sendDiscord(
+      config.webhookUrl,
+      message,
+      config.discordMention,
+      config.discordDebug,
+    );
   }
 
   if (!config.dryRun) {
