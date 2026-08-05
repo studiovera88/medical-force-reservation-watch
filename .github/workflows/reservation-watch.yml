@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+    inputs:
+      force_notify:
+        description: "Send a Discord test notification even when no slots are available"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: write
@@ -35,6 +44,7 @@ jobs:
           CONFIRM_TEXT: ${{ vars.CONFIRM_TEXT || 'メニューを確定する' }}
           SCAN_NEXT_COUNT: ${{ vars.SCAN_NEXT_COUNT || '1' }}
           NEXT_WEEK_TEXTS: ${{ vars.NEXT_WEEK_TEXTS || '翌週|次週|次へ' }}
+          FORCE_NOTIFY: ${{ inputs.force_notify || 'false' }}
           STATE_FILE: state/notified-slots.json
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
