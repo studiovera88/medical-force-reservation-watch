@@ -37,7 +37,7 @@ jobs:
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
         run: |
-          if [[ -z "$WATCH_URL" || -z "$DISCORD_WEBHOOK_URL" || ( -z "$CLICK_TEXTS" && -z "$MENU_TEXTS" ) ]]; then
+          if [[ -z "$WATCH_URL" || -z "$DISCORD_WEBHOOK_URL" || -z "$CLICK_TEXTS" ]]; then
             echo "::notice::Set WATCH_URL, DISCORD_WEBHOOK_URL, and CLICK_TEXTS before enabling reservation checks."
             exit 0
           fi
