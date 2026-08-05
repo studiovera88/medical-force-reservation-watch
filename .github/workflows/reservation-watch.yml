@@ -30,14 +30,15 @@ jobs:
         env:
           WATCH_URL: ${{ secrets.WATCH_URL || vars.WATCH_URL }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          CLICK_TEXTS: ${{ secrets.CLICK_TEXTS }}
           MENU_TEXTS: ${{ secrets.MENU_TEXTS }}
           CONFIRM_TEXT: ${{ vars.CONFIRM_TEXT || 'メニューを確定する' }}
           STATE_FILE: state/notified-slots.json
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
         run: |
-          if [[ -z "$WATCH_URL" || -z "$DISCORD_WEBHOOK_URL" || -z "$MENU_TEXTS" ]]; then
-            echo "::notice::Set WATCH_URL, DISCORD_WEBHOOK_URL, and MENU_TEXTS before enabling reservation checks."
+          if [[ -z "$WATCH_URL" || -z "$DISCORD_WEBHOOK_URL" || ( -z "$CLICK_TEXTS" && -z "$MENU_TEXTS" ) ]]; then
+            echo "::notice::Set WATCH_URL, DISCORD_WEBHOOK_URL, and CLICK_TEXTS before enabling reservation checks."
             exit 0
           fi
 
