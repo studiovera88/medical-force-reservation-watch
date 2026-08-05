@@ -386,6 +386,21 @@ export function buildNotificationMessage({ detection, url, checkedAt }) {
     .slice(0, 1900);
 }
 
+export function buildTestNotificationMessage({ detection, checkedAt }) {
+  const checkedAtText = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    dateStyle: "short",
+    timeStyle: "medium",
+  }).format(checkedAt);
+
+  return [
+    "Medical Force予約監視のテスト通知です。",
+    `現在の判定: ${detection.available ? "空きあり" : "空きなし"}`,
+    `理由: ${detection.reason}`,
+    `確認時刻: ${checkedAtText}`,
+  ].join("\n");
+}
+
 export function buildSignatures(detection) {
   if (detection.slots.length > 0) {
     return detection.slots.map((slot) =>
@@ -800,6 +815,7 @@ async function buildConfig(args) {
     chromePath: env.CHROME_PATH || "",
     writeStatusState: envFlag(env.WRITE_STATUS_STATE, true),
     debugLogs: envFlag(env.DEBUG_LOGS, false),
+    forceNotify: envFlag(env.FORCE_NOTIFY, false),
     dryRun: args.dryRun,
     noNotify: args.noNotify,
     printText: args.printText,
@@ -849,12 +865,27 @@ async function main() {
   const state = await readState(config.stateFile);
 
   if (!detection.available) {
+    if (config.forceNotify && !config.dryRun && !config.noNotify) {
+      if (!config.webhookUrl) {
+        throw new Error("DISCORD_WEBHOOK_URL is not set.");
+      }
+      await sendDiscord(
+        config.webhookUrl,
+        buildTestNotificationMessage({ detection, checkedAt }),
+      );
+    }
+
     if (!config.dryRun && config.writeStatusState) {
       state.lastCheckedAt = checkedAt.toISOString();
       state.lastStatus = detection.reason;
       await writeState(config.stateFile, state);
     }
-    console.log(JSON.stringify({ available: false, reason: detection.reason }));
+    console.log(
+      JSON.stringify({
+        available: false,
+        reason: config.forceNotify ? "test-notified" : detection.reason,
+      }),
+    );
     return;
   }
 
