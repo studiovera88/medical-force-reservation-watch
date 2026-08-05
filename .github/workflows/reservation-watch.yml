@@ -1,0 +1,51 @@
+name: Reservation Watch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reservation-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Check reservation
+        env:
+          WATCH_URL: ${{ secrets.WATCH_URL || vars.WATCH_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          MENU_TEXTS: ${{ secrets.MENU_TEXTS }}
+          CONFIRM_TEXT: ${{ vars.CONFIRM_TEXT || 'メニューを確定する' }}
+          STATE_FILE: state/notified-slots.json
+          CHROME_PATH: /usr/bin/google-chrome-stable
+          WRITE_STATUS_STATE: "false"
+        run: npm run watch:once
+
+      - name: Commit notification state
+        run: |
+          if [[ -z "$(git status --porcelain state/notified-slots.json)" ]]; then
+            echo "No new notification state."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/notified-slots.json
+          git commit -m "state: update notified reservation slots"
+          git push
