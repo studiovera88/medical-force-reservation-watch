@@ -55,6 +55,8 @@ Workflowは `.github/workflows/reservation-watch.yml` です。
 
 この設定を使う場合、GitHub Secretsの `MENU_TEXTS` は不要です。古い `MENU_TEXTS` が残っていても、Actionsでは `CLICK_TEXTS` が入るまで実行しません。
 
+日程表は初期表示の1週間に加えて、デフォルトで翌週を1回開いて確認します。もっと先まで見たい場合はVariableに `SCAN_NEXT_COUNT=2` のように入れます。
+
 注意:
 
 - public repoならGitHub Actionsの分数課金を気にせず使えます。
@@ -80,6 +82,8 @@ bin/create-public-snapshot.sh
 | `CONFIRM_TEXT` | メニュー選択後に押す確定ボタン。不要なら空文字 |
 | `CHECK_TIMEOUT_MS` | ページ表示を待つ最大時間 |
 | `PAGE_SETTLE_MS` | 予約表らしき文字を検知した後の追加待機 |
+| `SCAN_NEXT_COUNT` | 予約表表示後に翌週へ進む回数。デフォルトは `1` |
+| `NEXT_WEEK_TEXTS` | 翌週ボタン候補。デフォルトは `翌週|次週|次へ` |
 | `STATE_FILE` | 通知済み枠の記録ファイル |
 | `CHROME_PATH` | 起動するChromeの実行ファイル |
 | `WRITE_STATUS_STATE` | `false` にすると空きなし/通知済みだけではstateを書き換えない |
