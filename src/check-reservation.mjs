@@ -483,11 +483,13 @@ async function scrapeRenderedText(url, config) {
     }
 
     const scheduleTexts = [await waitForPageText(client, sessionId, config)];
+    let nextPageClicks = 0;
     for (let index = 0; index < config.scanNextCount; index += 1) {
       const clicked = await clickFirstByText(client, sessionId, config.nextWeekTexts);
       if (!clicked) {
         break;
       }
+      nextPageClicks += 1;
 
       await waitForBodyTextChange(client, sessionId, scheduleTexts.at(-1), 8000).catch(
         () => {},
@@ -495,6 +497,14 @@ async function scrapeRenderedText(url, config) {
       await delay(config.pageSettleMs);
       scheduleTexts.push(await waitForPageText(client, sessionId, config));
     }
+
+    console.log(
+      JSON.stringify({
+        schedule_pages_scanned: scheduleTexts.length,
+        next_page_clicks: nextPageClicks,
+        scan_next_count: config.scanNextCount,
+      }),
+    );
 
     return scheduleTexts.join("\n\n--- next schedule page ---\n\n");
   } catch (error) {
