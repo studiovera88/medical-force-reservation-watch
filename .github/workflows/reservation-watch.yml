@@ -35,7 +35,13 @@ jobs:
           STATE_FILE: state/notified-slots.json
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
-        run: npm run watch:once
+        run: |
+          if [[ -z "$WATCH_URL" || -z "$DISCORD_WEBHOOK_URL" || -z "$MENU_TEXTS" ]]; then
+            echo "::notice::Set WATCH_URL, DISCORD_WEBHOOK_URL, and MENU_TEXTS before enabling reservation checks."
+            exit 0
+          fi
+
+          npm run watch:once
 
       - name: Commit notification state
         run: |
