@@ -1,8 +1,9 @@
 # Medical Force Reservation Watch
 
-Medical Forceの予約ページを定期確認し、予約表本体に `◎` が出たらDiscord Webhookへ通知するローカル監視ツール。
+Medical Forceの予約ページを定期確認し、予約表本体の日時に紐づく `◎` が出たらDiscord Webhookへ通知するローカル監視ツール。
 
 凡例の `◎ 予約できます` は誤検知しないように除外します。
+日時に紐づけて解析できない単独の `◎` も通知対象にしません。
 
 ## 初期設定
 
