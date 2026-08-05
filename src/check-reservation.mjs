@@ -214,18 +214,11 @@ export function detectAvailability(text) {
     };
   }
 
-  if (hasRawAvailableSymbol) {
-    return {
-      available: true,
-      reason: "available-symbol",
-      slots: [],
-      scheduleText,
-    };
-  }
-
   return {
     available: false,
-    reason: "no-available-slot",
+    reason: hasRawAvailableSymbol
+      ? "unparsed-available-symbol"
+      : "no-available-slot",
     slots: [],
     scheduleText,
   };
