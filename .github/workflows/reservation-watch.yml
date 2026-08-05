@@ -21,6 +21,14 @@ on:
         options:
           - "false"
           - "true"
+      scan_debug:
+        description: "Log visible clickable controls when next week cannot be clicked"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: write
@@ -55,6 +63,7 @@ jobs:
           NEXT_WEEK_TEXTS: ${{ vars.NEXT_WEEK_TEXTS || '翌週|次週|次へ' }}
           FORCE_NOTIFY: ${{ inputs.force_notify || 'false' }}
           DISCORD_DEBUG: ${{ inputs.discord_debug || 'false' }}
+          SCAN_DEBUG: ${{ inputs.scan_debug || 'false' }}
           STATE_FILE: state/notified-slots.json
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
