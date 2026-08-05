@@ -13,6 +13,14 @@ on:
         options:
           - "false"
           - "true"
+      discord_debug:
+        description: "Log Discord message id and channel id after notification"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 permissions:
   contents: write
@@ -46,6 +54,7 @@ jobs:
           SCAN_NEXT_COUNT: ${{ vars.SCAN_NEXT_COUNT || '1' }}
           NEXT_WEEK_TEXTS: ${{ vars.NEXT_WEEK_TEXTS || '翌週|次週|次へ' }}
           FORCE_NOTIFY: ${{ inputs.force_notify || 'false' }}
+          DISCORD_DEBUG: ${{ inputs.discord_debug || 'false' }}
           STATE_FILE: state/notified-slots.json
           CHROME_PATH: /usr/bin/google-chrome-stable
           WRITE_STATUS_STATE: "false"
