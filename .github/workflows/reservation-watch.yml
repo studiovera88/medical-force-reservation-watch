@@ -39,6 +39,7 @@ jobs:
         env:
           WATCH_URL: ${{ secrets.WATCH_URL || vars.WATCH_URL }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MENTION: ${{ secrets.DISCORD_MENTION }}
           CLICK_TEXTS: ${{ secrets.CLICK_TEXTS }}
           MENU_TEXTS: ${{ secrets.MENU_TEXTS }}
           CONFIRM_TEXT: ${{ vars.CONFIRM_TEXT || 'メニューを確定する' }}
